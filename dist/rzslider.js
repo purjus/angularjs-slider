@@ -1,7 +1,7 @@
-/*! angularjs-slider - v5.4.1 - 
+/*! angularjs-slider - v5.5.0 - 
  (c) Rafal Zajac <rzajac@gmail.com>, Valentin Hervieu <valentin@hervieu.me>, Jussi Saarivirta <jusasi@gmail.com>, Angelin Sirbu <angelin.sirbu@gmail.com> - 
  https://github.com/angular-slider/angularjs-slider - 
- 2016-07-17 */
+ 2016-09-06 */
 /*jslint unparam: true */
 /*global angular: false, console: false, define, module */
 (function(root, factory) {
@@ -48,6 +48,7 @@
       showSelectionBarFromValue: null,
       hidePointerLabels: false,
       hideLimitLabels: false,
+      autoHideLimitLabels: true,
       readOnly: false,
       disabled: false,
       interval: 350,
@@ -792,7 +793,10 @@
           label.rzsv = valStr;
         }
 
-        if(!noLabelInjection){ label.html(valStr); };
+        if (!noLabelInjection) {
+          label.html(valStr);
+        }
+        ;
 
         this.scope[which + 'Label'] = valStr;
 
@@ -933,7 +937,7 @@
               'background-color': this.getSelectionBarColor()
             };
           }
-          if(!tick.selected && this.options.getTickColor){
+          if (!tick.selected && this.options.getTickColor) {
             tick.style = {
               'background-color': this.getTickColor(value)
             }
@@ -1066,7 +1070,9 @@
           };
         }
 
-        this.shFloorCeil();
+        if(this.options.autoHideLimitLabels){
+          this.shFloorCeil();
+        }
       },
 
       /**
@@ -1086,8 +1092,10 @@
             backgroundColor: pointercolor
           };
         }
+        if(this.options.autoHideLimitLabels){
+          this.shFloorCeil();
+        }
 
-        this.shFloorCeil();
       },
 
       /**
@@ -1098,7 +1106,7 @@
       shFloorCeil: function() {
         // Show based only on hideLimitLabels if pointer labels are hidden
         if (this.options.hidePointerLabels) {
-            return;
+          return;
         }
         var flHidden = false,
           clHidden = false,
@@ -1912,6 +1920,16 @@
        * @param {number} newMaxValue   the new maximum value
        */
       positionTrackingBar: function(newMinValue, newMaxValue) {
+
+        if (this.options.minLimit != null && newMinValue < this.options.minLimit) {
+          newMinValue = this.options.minLimit;
+          newMaxValue = newMinValue + this.dragging.difference;
+        }
+        if (this.options.maxLimit != null && newMaxValue > this.options.maxLimit){
+          newMaxValue = this.options.maxLimit;
+          newMinValue = newMaxValue - this.dragging.difference;
+        }
+
         this.lowValue = newMinValue;
         this.highValue = newMaxValue;
         this.applyLowValue();
@@ -1937,40 +1955,36 @@
             valueChanged = true;
           }
           else {
+            if (this.options.noSwitching) {
+              if (this.tracking === 'lowValue' && newValue > this.highValue)
+                newValue = this.applyMinMaxRange(this.highValue);
+              else if (this.tracking === 'highValue' && newValue < this.lowValue)
+                newValue = this.applyMinMaxRange(this.lowValue);
+            }
             newValue = this.applyMinMaxRange(newValue);
             /* This is to check if we need to switch the min and max handles */
             if (this.tracking === 'lowValue' && newValue > this.highValue) {
-              if (this.options.noSwitching && this.highValue !== this.minValue) {
-                newValue = this.applyMinMaxRange(this.highValue);
-              }
-              else {
-                this.lowValue = this.highValue;
-                this.applyLowValue();
-                this.updateHandles(this.tracking, this.maxH.rzsp);
-                this.updateAriaAttributes();
-                this.tracking = 'highValue';
-                this.minH.removeClass('rz-active');
-                this.maxH.addClass('rz-active');
-                if (this.options.keyboardSupport)
-                  this.focusElement(this.maxH);
-              }
+              this.lowValue = this.highValue;
+              this.applyLowValue();
+              this.updateHandles(this.tracking, this.maxH.rzsp);
+              this.updateAriaAttributes();
+              this.tracking = 'highValue';
+              this.minH.removeClass('rz-active');
+              this.maxH.addClass('rz-active');
+              if (this.options.keyboardSupport)
+                this.focusElement(this.maxH);
               valueChanged = true;
             }
             else if (this.tracking === 'highValue' && newValue < this.lowValue) {
-              if (this.options.noSwitching && this.lowValue !== this.maxValue) {
-                newValue = this.applyMinMaxRange(this.lowValue);
-              }
-              else {
-                this.highValue = this.lowValue;
-                this.applyHighValue();
-                this.updateHandles(this.tracking, this.minH.rzsp);
-                this.updateAriaAttributes();
-                this.tracking = 'lowValue';
-                this.maxH.removeClass('rz-active');
-                this.minH.addClass('rz-active');
-                if (this.options.keyboardSupport)
-                  this.focusElement(this.minH);
-              }
+              this.highValue = this.lowValue;
+              this.applyHighValue();
+              this.updateHandles(this.tracking, this.minH.rzsp);
+              this.updateAriaAttributes();
+              this.tracking = 'lowValue';
+              this.maxH.removeClass('rz-active');
+              this.minH.addClass('rz-active');
+              if (this.options.keyboardSupport)
+                this.focusElement(this.minH);
               valueChanged = true;
             }
           }
